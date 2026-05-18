@@ -321,7 +321,7 @@ function loadConfig() {
     model: {
       provider: env.SMALLCODE_PROVIDER || 'openai',
       name: env.SMALLCODE_MODEL || '',
-      baseUrl: env.SMALLCODE_BASE_URL || env.OLLAMA_HOST ? (env.OLLAMA_HOST + '/v1') : 'http://localhost:1234/v1',
+      baseUrl: env.SMALLCODE_BASE_URL || (env.OLLAMA_HOST ? (env.OLLAMA_HOST + '/v1') : 'http://localhost:1234/v1'),
     },
     context: {
       max_budget_pct: parseInt(env.SMALLCODE_CONTEXT_BUDGET) || 70,
