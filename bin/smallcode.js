@@ -103,7 +103,7 @@ let tokenTracker = null;
 // Fullscreen TUI reference for streaming (set when fullscreen mode is active)
 let _fullscreenRef = null;
 
-const VERSION = '0.5.4';
+const VERSION = '0.6.0';
 const LOGO = `
   ⚡ SmallCode v${VERSION}
   AI coding agent for small LLMs
@@ -545,6 +545,28 @@ async function runAgentLoop(userMessage, config) {
   let toolCallsThisTurn = 0;
 
   while (toolCallsThisTurn < MAX_TOOL_CALLS) {
+    // Mid-turn context check: if history is getting too large, evict old tool results
+    // This prevents context overflow during long tool-call chains
+    if (toolCallsThisTurn > 0 && toolCallsThisTurn % 3 === 0) {
+      const midEst = conversationHistory.reduce((sum, m) => {
+        const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '');
+        return sum + Math.ceil(c.length / 4);
+      }, 0);
+      const maxBudget = (config.context?.detected_window || 128000) * 0.6;
+      if (midEst > maxBudget) {
+        // Evict oldest tool results (keep user/assistant messages intact)
+        let evicted = 0;
+        for (let i = 0; i < conversationHistory.length && midEst > maxBudget * 0.7; i++) {
+          if (conversationHistory[i].role === 'tool') {
+            const len = Math.ceil((conversationHistory[i].content || '').length / 4);
+            conversationHistory.splice(i, 1);
+            evicted++;
+            i--;
+          }
+        }
+      }
+    }
+
     const response = await chatCompletion(config, conversationHistory);
 
     if (!response) {
@@ -593,9 +615,10 @@ async function runAgentLoop(userMessage, config) {
           console.log(tui.toolSuccess('', toolMs));
         }
 
-        // Add tool result to history (cap at 8k chars to prevent context explosion)
+        // Add tool result to history (cap to prevent context explosion)
+        // Default 4k chars per result — keeps 10 tool calls at ~10k tokens total
         const toolContent = result.result || result.error || '';
-        const maxToolResultChars = (config.context?.detected_window || 128000) < 64000 ? 6000 : 12000;
+        const maxToolResultChars = 4000;
         const cappedContent = toolContent.length > maxToolResultChars
           ? toolContent.slice(0, maxToolResultChars - 200) + '\n\n...(truncated, ' + toolContent.length + ' chars total)...\n' + toolContent.slice(-200)
           : toolContent;
