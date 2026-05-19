@@ -211,6 +211,25 @@ module.exports = function createCommandHandler(config, conversationHistory, impr
         return;
       }
 
+      case '/profile': {
+        const { getProfile } = require('../src/model/profiles');
+        const { getRoutingMode, estimateSavings } = require('../src/tools/two_stage_router');
+        const profile = getProfile(config.model.name, config.context?.detected_window || 0);
+        const mode = getRoutingMode(config.context?.detected_window || 32768, process.env.SMALLCODE_TOOL_ROUTING);
+        console.log(chalk.bold('  Model Profile'));
+        console.log(`  Model:     ${chalk.cyan(config.model.name)}`);
+        console.log(`  Matched:   ${profile.matched_key ? chalk.green(profile.matched_key) : chalk.gray('none (using defaults)')}`);
+        console.log(`  Context:   ${chalk.white(String(profile.context_length))} tokens`);
+        console.log(`  Max out:   ${chalk.white(String(profile.max_output))} tokens`);
+        console.log(`  Tools:     ${chalk.white(profile.tool_format)}`);
+        console.log(`  Routing:   ${chalk.white(mode)}`);
+        if (profile.strengths.length) console.log(`  Strengths: ${chalk.green(profile.strengths.join(', '))}`);
+        if (profile.weaknesses.length) console.log(`  Weak:      ${chalk.yellow(profile.weaknesses.join(', '))}`);
+        console.log('');
+        rl.prompt();
+        return;
+      }
+
       case '/skill': {
         const { SkillManager } = require('../src/plugins/skills');
         const sm = new SkillManager(process.cwd());
@@ -525,6 +544,7 @@ module.exports = function createCommandHandler(config, conversationHistory, impr
         console.log(`  ${chalk.cyan('/undo')}          ${chalk.gray('Revert uncommitted changes')}`);
         console.log(`  ${chalk.cyan('/compact')}       ${chalk.gray('Trim conversation history')}`);
         console.log(`  ${chalk.cyan('/escalation')}    ${chalk.gray('View model escalation status')}`);
+        console.log(`  ${chalk.cyan('/profile')}       ${chalk.gray('Show detected model profile')}`);
         console.log(`  ${chalk.cyan('/skill')}         ${chalk.gray('Manage reusable skills')}`);
         console.log(`  ${chalk.cyan('/plugin')}        ${chalk.gray('List installed plugins')}`);
         console.log(`  ${chalk.cyan('/sessions')}      ${chalk.gray('List/resume saved sessions')}`);

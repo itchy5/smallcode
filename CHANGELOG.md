@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.17] - 2026-05-18
+
+### Added
+- **`/profile` command** — Shows detected model profile (context length, tool format, strengths/weaknesses, routing mode)
+- **Repetition loop detection in streaming** — `streamFinalResponse` now uses early-stop detector to halt generation when model repeats itself
+- **Governor MarrowScript updated** — `governor.marrow` now declares early-stop signals and tool routing tiers
+
+### Fixed
+- **Auth headers missing in `streamFinalResponse` and `sendToModel`** — Both streaming functions now send `Authorization` + OpenRouter headers. Previously these would 401 on cloud/authenticated endpoints.
+
 ## [0.4.16] - 2026-05-18
 
 ### Added

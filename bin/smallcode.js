@@ -97,7 +97,7 @@ let tokenTracker = null;
 // Fullscreen TUI reference for streaming (set when fullscreen mode is active)
 let _fullscreenRef = null;
 
-const VERSION = '0.4.16';
+const VERSION = '0.4.17';
 const LOGO = `
   ⚡ SmallCode v${VERSION}
   AI coding agent for small LLMs
@@ -2016,12 +2016,20 @@ async function streamFinalResponse(config, messages) {
   };
 
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.DEEPSEEK_API_KEY || config.model.apiKey;
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    if (baseUrl.includes('openrouter.ai')) {
+      headers['HTTP-Referer'] = 'https://github.com/Doorman11991/smallcode';
+      headers['X-Title'] = 'SmallCode';
+    }
+
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         model: config.model.name,
-        messages: [systemMsg, ...messages.slice(-6)], // Only last few messages for summary
+        messages: [systemMsg, ...messages.slice(-6)],
         stream: true,
         temperature: 0.1,
         max_tokens: 256,
@@ -2064,6 +2072,14 @@ async function streamFinalResponse(config, messages) {
               process.stdout.write(delta.content);
             }
             fullContent += delta.content;
+
+            // Early-stop: check for repetition loops during streaming
+            const stopSignal = earlyStop.checkRepetition(fullContent);
+            if (stopSignal) {
+              if (_fullscreenRef) { _fullscreenRef.endStream(); _fullscreenRef.setStreaming(false); }
+              else console.log(`\n  \x1b[33m⚡ ${stopSignal.message}\x1b[0m`);
+              return fullContent;
+            }
           }
         } catch {}
       }
@@ -2089,9 +2105,17 @@ Rules:
   // OpenAI-compatible (LM Studio, vLLM, etc.)
   if (config.model.provider === 'openai' || baseUrl.includes('/v1')) {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.DEEPSEEK_API_KEY || config.model.apiKey;
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+      if (baseUrl.includes('openrouter.ai')) {
+        headers['HTTP-Referer'] = 'https://github.com/Doorman11991/smallcode';
+        headers['X-Title'] = 'SmallCode';
+      }
+
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           model: config.model.name,
           messages: [
