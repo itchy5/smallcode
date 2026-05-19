@@ -22,8 +22,10 @@ async function executeTool(name, args, ctx) {
 
   switch (name) {
     case 'read_file': {
-      const filePath = path.resolve(cwd, args.path);
-      if (!fs.existsSync(filePath)) return { error: `File not found: ${args.path}` };
+      // Normalize path (strip leading ./ and fix slashes)
+      let reqPath = args.path.replace(/^\.\//, '').replace(/^\.\\/, '');
+      const filePath = path.resolve(cwd, reqPath);
+      if (!fs.existsSync(filePath)) return { error: `File not found: ${args.path} (checked: ${filePath})` };
       const content = fs.readFileSync(filePath, 'utf-8');
       const lines = content.split('\n');
       const start = (args.start_line || 1) - 1;
@@ -34,7 +36,8 @@ async function executeTool(name, args, ctx) {
     }
 
     case 'write_file': {
-      const filePath = path.resolve(cwd, args.path);
+      let reqPath = args.path.replace(/^\.\//, '').replace(/^\.\\/, '');
+      const filePath = path.resolve(cwd, reqPath);
       const dir = path.dirname(filePath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const existed = fs.existsSync(filePath);
@@ -51,8 +54,9 @@ async function executeTool(name, args, ctx) {
     }
 
     case 'patch': {
-      const filePath = path.resolve(cwd, args.path);
-      if (!fs.existsSync(filePath)) return { error: `File not found: ${args.path}` };
+      let reqPath = args.path.replace(/^\.\//, '').replace(/^\.\\/, '');
+      const filePath = path.resolve(cwd, reqPath);
+      if (!fs.existsSync(filePath)) return { error: `File not found: ${args.path} (checked: ${filePath})` };
       let content = fs.readFileSync(filePath, 'utf-8');
       const count = content.split(args.old_str).length - 1;
       if (count === 0) return { error: `old_str not found in ${args.path}` };

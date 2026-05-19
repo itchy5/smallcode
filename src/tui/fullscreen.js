@@ -182,8 +182,8 @@ class FullScreenTUI {
     // Store a direct reference to the real stdout.write (before any overrides)
     this._rawWrite = process.stdout.write.bind(process.stdout);
 
-    // Enter alternate buffer + raw mode + enable mouse tracking + SGR encoding + bracketed paste
-    this._rawWrite(ANSI.enterAlt + ANSI.hideCursor + '\x1b[?1000h' + '\x1b[?1006h' + '\x1b[?2004h');
+    // Enter alternate buffer + raw mode + enable button-event mouse tracking (allows text selection) + SGR encoding + bracketed paste
+    this._rawWrite(ANSI.enterAlt + ANSI.hideCursor + '\x1b[?1002h' + '\x1b[?1006h' + '\x1b[?2004h');
     process.stdin.setRawMode(true);
     process.stdin.resume();
 
@@ -200,7 +200,7 @@ class FullScreenTUI {
   leave() {
     this.active = false;
     const write = this._rawWrite || process.stdout.write.bind(process.stdout);
-    write(ANSI.showCursor + '\x1b[?1000l' + '\x1b[?1006l' + '\x1b[?2004l' + ANSI.leaveAlt + ANSI.reset);
+    write(ANSI.showCursor + '\x1b[?1002l' + '\x1b[?1006l' + '\x1b[?2004l' + ANSI.leaveAlt + ANSI.reset);
     process.stdin.setRawMode(false);
     process.stdin.pause();
   }

@@ -240,11 +240,6 @@ async function runTUI(config) {
         screen.setStreaming(false);
         // Update token counter in status bar
         if (tokenTracker) screen.setTokenInfo(tokenTracker.formatShort());
-        // Push recent assistant message to screen
-        const lastMsg = conversationHistory.filter(m => m.role === 'assistant').pop();
-        if (lastMsg && lastMsg.content) {
-          screen.addChat('assistant', lastMsg.content);
-        }
       },
       onCommand: async (cmd) => {
         if (cmd === '/quit' || cmd === '/q' || cmd === '/exit') {
